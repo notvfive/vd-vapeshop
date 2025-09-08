@@ -3,6 +3,7 @@
 [![Join Discord](https://img.shields.io/badge/Join%20Discord-7289DA?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/HzmPyDrVUS)
 
 A comprehensive vapeshop system for QBCore with business management, stock tracking, and automated sales.
+Thanks chatgpt for this documentation and the exports ya dog.
 
 ## Features
 
