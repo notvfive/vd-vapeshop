@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vapeshop Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div id="app" class="hidden">
+        <div class="dashboard">
+            <div class="header">
+                <h1><i class="fas fa-store"></i> Vapeshop Dashboard</h1>
+                <button class="close-btn" onclick="closeDashboard()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="balance-card">
+                <div class="balance-info">
+                    <i class="fas fa-wallet"></i>
+                    <div>
+                        <span class="balance-label">Business Balance</span>
+                        <span class="balance-amount" id="businessBalance">$0</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchTab('stock')">
+                    <i class="fas fa-boxes"></i> Stock
+                </button>
+                <button class="tab-btn" onclick="switchTab('shipments')">
+                    <i class="fas fa-truck"></i> Shipments
+                </button>
+                <button class="tab-btn" onclick="switchTab('money')">
+                    <i class="fas fa-money-bill-wave"></i> Money
+                </button>
+            </div>
+
+            <div class="tab-content">
+                <div id="stock-tab" class="tab-panel active">
+                    <h3><i class="fas fa-boxes"></i> Current Stock</h3>
+                    <div class="stock-list" id="stockList">
+                        <div class="no-stock">
+                            <i class="fas fa-box-open"></i>
+                            <p>No stock available</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="shipments-tab" class="tab-panel">
+                    <h3><i class="fas fa-truck"></i> Purchase Shipments</h3>
+                    <div class="shipments-list" id="shipmentsList">
+                    </div>
+                </div>
+
+                <div id="money-tab" class="tab-panel">
+                    <h3><i class="fas fa-money-bill-wave"></i> Money Management</h3>
+                    
+                    <div class="money-section">
+                        <h4><i class="fas fa-arrow-down"></i> Deposit to Business</h4>
+                        <div class="money-input-group">
+                            <select id="depositType">
+                                <option value="cash">Cash</option>
+                                <option value="bank">Bank</option>
+                            </select>
+                            <input type="number" id="depositAmount" placeholder="Amount" min="1">
+                            <button onclick="depositMoney()" class="action-btn deposit-btn">
+                                <i class="fas fa-arrow-down"></i> Deposit
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="money-section">
+                        <h4><i class="fas fa-arrow-up"></i> Withdraw from Business</h4>
+                        <div class="money-input-group">
+                            <select id="withdrawType">
+                                <option value="cash">Cash</option>
+                                <option value="bank">Bank</option>
+                            </select>
+                            <input type="number" id="withdrawAmount" placeholder="Amount" min="1">
+                            <button onclick="withdrawMoney()" class="action-btn withdraw-btn">
+                                <i class="fas fa-arrow-up"></i> Withdraw
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

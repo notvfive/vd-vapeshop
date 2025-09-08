@@ -30,7 +30,7 @@ dependencies {
 	'oxmysql'
 }
 
-ui_page 'index.html'
+ui_page 'web/index.html'
 
 files {
 	'web/index.html',
