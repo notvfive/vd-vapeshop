@@ -20,6 +20,7 @@ client_scripts {
 
 server_scripts {
 	'shared/server.lua',
+	'shared/exports.lua',
 	'server/*.lua',
 }
 
