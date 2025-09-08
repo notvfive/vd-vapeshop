@@ -1,6 +1,20 @@
 config = {}
 
-config.InteractionLocation = vector3(0, 0, 0)
+config.Interactions = {
+    --- Icons from : https://fontawesome.com/
+    Purchase = {
+        name = "Purchase",
+        event = "vd-vapeshop:client:PurchaseShop",
+        location = vector3(0, 0, 0),
+        icon = "fa-regular fa-building"
+    },
+    Shopmanage = {
+        name = "Manage Shop",
+        event = "vd-vapeshop:client:Shopmanage",
+        location = vector3(0, 0, 0),
+        icon = "fa-solid fa-laptop"
+    }
+}
 
 config.Currency = "business" --[[
     business = Takes money from the business balance
