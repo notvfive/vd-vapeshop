@@ -7,14 +7,20 @@ author "notvfive"
 version "1.0"
 lua54 'yes'
 
+shared_scripts {
+	'@ox_lib/init.lua',
+	-- 'shared/*.lua',
+	'config.lua'
+}
+
 client_scripts {
-	'client/*.lua',
-	'shared/client.lua'
+	'shared/client.lua',
+	'client/*.lua'
 }
 
 server_scripts {
+	'shared/server.lua',
 	'server/*.lua',
-	'shared/server.lua'
 }
 
 dependencies {

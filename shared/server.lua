@@ -28,19 +28,25 @@ local function getCitizenId(source)
     return player.PlayerData.citizenid
 end
 
---- Check if a player owns a vapeshop
+--- Check if a player owns a vapeshop (synchronous version)
 --- @param source number
 --- @return boolean|nil True if player owns a vapeshop, false if not, nil if player doesn't exist
 function server.DoesPlayerOwnVapeshop(source)
     local citizenid = getCitizenId(source)
-    if not citizenid then return nil end
+    if not citizenid then
+        return nil
+    end
 
-    local exists = mysql.scalar.await(
+    local result = mysql:querySync(
         'SELECT 1 FROM vd_vapeshop WHERE citizenid = ?',
         { citizenid }
     )
 
-    return exists ~= nil
+    if result and #result > 0 then
+        return true
+    else
+        return false
+    end
 end
 
 --- Get player's vapeshop balance
@@ -50,41 +56,13 @@ function server.GetVapeshopBalance(source)
     local citizenid = getCitizenId(source)
     if not citizenid then return 0 end
 
-    local balance = mysql.scalar.await(
+    local balance = mysql:query(
         'SELECT balance FROM vd_vapeshop WHERE citizenid = ?',
         { citizenid }
     )
 
     return balance or 0
 end
-
---[[
---- Check if player can afford vapeshop
---- @param source number
---- @return boolean canAfford
-function server.CanAffordVapeshop(source)
-    local Player = QBCore.Functions.GetPlayer(source)
-    if not Player then return false end
-
-    if config.Currency == "cash" then
-        if Player.money.cash >= config.ShopPrice then
-            return true
-        else
-            return false
-        end
-    elseif config.Currency == "bank" then
-        if Player.money.bank >= config.ShopPrice then
-            return true
-        else
-            return false
-        end
-    else
-        return false
-    end
-
-    return false
-end
-]]
 
 --- Check if player can afford vapeshop
 --- @param source number
@@ -97,9 +75,9 @@ function server.CanAffordVapeshop(source)
     local amount = config.ShopPrice
 
     if currency == "cash" then
-        return (player.money.cash or 0) >= amount
+        return (player.PlayerData.money.cash or 0) >= amount
     elseif currency == "bank" then
-        return (player.money.bank or 0) >= amount
+        return (player.PlayerData.money.bank or 0) >= amount
     else
         return false
     end
@@ -111,14 +89,14 @@ end
 function server.PurchaseVapeshop(source)
     local player = QBCore.Functions.GetPlayer(source)
     local cid = getCitizenId(source)
-    if not player or not cid then return false end
+    if not player or not cid then return false, "Failed to get player object." end
 
-    if server.DoesPlayerOwnVapeshop(source) then return false end
+    if server.DoesPlayerOwnVapeshop(source) == true then return false, "You already own a vapeshop." end
 
-    if not server.CanAffordVapeshop(source) then return false end
+    if not server.CanAffordVapeshop(source) then return false, "You cannot afford a vapeshop ( $"..tostring(config.ShopPrice).." )" end
 
     local success, result = pcall(function()
-        return mysql.insert.await("INSERT INTO vd_vapeshop (citizenid) VALUES (?)", { cid })
+        return mysql:insert("INSERT INTO vd_vapeshop (citizenid, stock_data) VALUES (?, ?)", { cid, "{}" })
     end)
 
     if success then
@@ -132,9 +110,9 @@ function server.PurchaseVapeshop(source)
         end
         
         print("^2[VD-Vapeshop] "..cid.." purchased a vapeshop for $"..amount)
-        return true
+        return true, "Successfully purchased vapeshop for $"..tostring(config.ShopPrice)
     else
         print("^1[VD-Vapeshop] Failed to purchase vapeshop for "..cid..": "..tostring(result))
-        return false
+        return false, "Failed to purchase vapeshop."
     end
 end

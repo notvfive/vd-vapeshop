@@ -1,18 +1,19 @@
 CreateThread(function()
-    for i,v in pairs(config.Interactions) do
+    for key, v in pairs(config.Interactions) do
+        print("Placed: "..tostring(v.name))
         exports.ox_target:addBoxZone({
             coords = v.location,
-            name = i,
-            size = vector3(0.2, 0.2, 0.2),
+            name = key,
+            size = vector3(2,2,2),
             options = {
-                label = v.name
+                {
+                    label = v.name,
+                    icon = v.icon,
+                    onSelect = function()
+                        client.HandleInteraction(v)
+                    end
+                }
             }
         })
     end
 end)
-
-for i,v in pairs(config.Interactions) do
-    RegisterNetEvent(v.event, function()
-        client.HandleInteraction(v)
-    end)
-end

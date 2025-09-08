@@ -5,18 +5,18 @@ config.Interactions = {
     Purchase = {
         name = "Purchase",
         event = "vd-vapeshop:client:PurchaseShop",
-        location = vector3(0, 0, 0),
+        location = vector3(416.6877, -217.5833, 59.9104),
         icon = "fa-regular fa-building"
     },
     Shopmanage = {
         name = "Manage Shop",
         event = "vd-vapeshop:client:Shopmanage",
-        location = vector3(0, 0, 0),
+        location = vector3(413.8383, -216.4820, 59.9104),
         icon = "fa-solid fa-laptop"
     }
 }
 
-config.Currency = "business" --[[
+config.Currency = "cash" --[[
     business = Takes money from the business balance
     bank = Take money from your bank account
     cash = Takes money from your inventory
