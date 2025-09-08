@@ -17,6 +17,7 @@ RegisterNetEvent('vd-vapeshop:server:PurchaseVapeshop', function()
             description = "Failed to purchase vapeshop"
         })
     end
+    return
 end)
 
 -- Unused as of now, might use later idfk the plans on this script
