@@ -1,5 +1,13 @@
 config = {}
 
+config.Blip = {
+    label = "Vapeshop Business",
+    sprite = 140, 
+    colour = 3,
+    scale = 1.0,
+    location = vector3(416.6877, -217.5833, 59.9104)
+}
+
 config.Interactions = {
     --- Icons from : https://fontawesome.com/
     Purchase = {
