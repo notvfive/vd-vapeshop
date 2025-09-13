@@ -3,7 +3,15 @@
     Exports for other scripts to interact with the vapeshop system
 ]]
 
-local exports = {}
+local QBCore = exports['qb-core']:GetCoreObject()
+local mysql = exports.oxmysql
+
+-- Helper function to get citizen ID
+local function getCitizenId(source)
+    local player = QBCore.Functions.GetPlayer(source)
+    if not player then return nil end
+    return player.PlayerData.citizenid
+end
 
 --[[
     Check if a player owns a vapeshop
@@ -11,7 +19,21 @@ local exports = {}
     @return boolean - True if player owns a vapeshop
 ]]
 exports('DoesPlayerOwnVapeshop', function(source)
-    return server.DoesPlayerOwnVapeshop(source)
+    local citizenid = getCitizenId(source)
+    if not citizenid then
+        return false
+    end
+
+    local result = mysql:querySync(
+        'SELECT 1 FROM vd_vapeshop WHERE citizenid = ?',
+        { citizenid }
+    )
+
+    if result and #result > 0 then
+        return true
+    else
+        return false
+    end
 end)
 
 --[[
@@ -20,7 +42,19 @@ end)
     @return number - Business balance amount
 ]]
 exports('GetVapeshopBalance', function(source)
-    return server.GetVapeshopBalance(source)
+    local citizenid = getCitizenId(source)
+    if not citizenid then return 0 end
+
+    local result = mysql:querySync(
+        'SELECT balance FROM vd_vapeshop WHERE citizenid = ?',
+        { citizenid }
+    )
+
+    if result and #result > 0 then
+        return result[1].balance or 0
+    else
+        return 0
+    end
 end)
 
 --[[
@@ -30,7 +64,22 @@ end)
     @return boolean - Success status
 ]]
 exports('AddVapeshopBalance', function(source, amount)
-    return server.AddVapeshopBalance(source, amount)
+    local citizenid = getCitizenId(source)
+    if not citizenid then return false end
+
+    if not exports['vd-vapeshop']:DoesPlayerOwnVapeshop(source) then return false end
+
+    -- Check if adding amount would exceed max balance
+    local currentBalance = exports['vd-vapeshop']:GetVapeshopBalance(source)
+    if (currentBalance + amount) > config.MaxBusinessBalance then
+        return false
+    end
+
+    local success, result = pcall(function()
+        return mysql:update("UPDATE vd_vapeshop SET balance = balance + ? WHERE citizenid = ?", { amount, citizenid })
+    end)
+
+    return success
 end)
 
 --[[
@@ -40,7 +89,19 @@ end)
     @return boolean - Success status
 ]]
 exports('RemoveVapeshopBalance', function(source, amount)
-    return server.RemoveVapeshopBalance(source, amount)
+    local citizenid = getCitizenId(source)
+    if not citizenid then return false end
+
+    if not exports['vd-vapeshop']:DoesPlayerOwnVapeshop(source) then return false end
+
+    local currentBalance = exports['vd-vapeshop']:GetVapeshopBalance(source)
+    if currentBalance < amount then return false end
+
+    local success, result = pcall(function()
+        return mysql:update("UPDATE vd_vapeshop SET balance = balance - ? WHERE citizenid = ?", { amount, citizenid })
+    end)
+
+    return success
 end)
 
 --[[
@@ -50,7 +111,16 @@ end)
     @return boolean - Success status
 ]]
 exports('SetVapeshopBalance', function(source, amount)
-    return server.SetVapeshopBalance(source, amount)
+    local citizenid = getCitizenId(source)
+    if not citizenid then return false end
+
+    if not exports['vd-vapeshop']:DoesPlayerOwnVapeshop(source) then return false end
+
+    local success, result = pcall(function()
+        return mysql:update("UPDATE vd_vapeshop SET balance = ? WHERE citizenid = ?", { amount, citizenid })
+    end)
+
+    return success
 end)
 
 --[[
@@ -59,7 +129,22 @@ end)
     @return table - Stock data with vape names and quantities
 ]]
 exports('GetPlayerVapeshopStock', function(source)
-    return server.GetPlayerVapeshopStock(source)
+    local citizenid = getCitizenId(source)
+    if not citizenid then return {} end
+
+    if not exports['vd-vapeshop']:DoesPlayerOwnVapeshop(source) then return {} end
+
+    local result = mysql:querySync('SELECT stock_data FROM vd_vapeshop WHERE citizenid = ?', {citizenid })
+    if result and #result > 0 then
+        local stockData = result[1].stock_data
+        if type(stockData) == "string" then
+            return json.decode(stockData) or {}
+        else
+            return stockData or {}
+        end
+    else
+        return {}
+    end
 end)
 
 --[[
@@ -73,9 +158,9 @@ exports('AddVapeshopStock', function(source, vapeName, quantity)
     local citizenid = getCitizenId(source)
     if not citizenid then return false end
     
-    if not server.DoesPlayerOwnVapeshop(source) then return false end
+    if not exports['vd-vapeshop']:DoesPlayerOwnVapeshop(source) then return false end
     
-    local stock = server.GetPlayerVapeshopStock(source)
+    local stock = exports['vd-vapeshop']:GetPlayerVapeshopStock(source)
     if not stock then return false end
     
     -- Find existing vape or create new entry
@@ -114,9 +199,9 @@ exports('RemoveVapeshopStock', function(source, vapeName, quantity)
     local citizenid = getCitizenId(source)
     if not citizenid then return false end
     
-    if not server.DoesPlayerOwnVapeshop(source) then return false end
+    if not exports['vd-vapeshop']:DoesPlayerOwnVapeshop(source) then return false end
     
-    local stock = server.GetPlayerVapeshopStock(source)
+    local stock = exports['vd-vapeshop']:GetPlayerVapeshopStock(source)
     if not stock then return false end
     
     -- Find and remove vapes
@@ -168,7 +253,19 @@ end)
     @return boolean - True if player can afford it
 ]]
 exports('CanAffordVapeshop', function(source)
-    return server.CanAffordVapeshop(source)
+    local player = QBCore.Functions.GetPlayer(source)
+    if not player then return false end
+
+    local currency = config.Currency
+    local amount = config.ShopPrice
+
+    if currency == "cash" then
+        return (player.PlayerData.money.cash or 0) >= amount
+    elseif currency == "bank" then
+        return (player.PlayerData.money.bank or 0) >= amount
+    else
+        return false
+    end
 end)
 
 --[[
@@ -177,7 +274,34 @@ end)
     @return boolean, string - Success status and message
 ]]
 exports('PurchaseVapeshop', function(source)
-    return server.PurchaseVapeshop(source)
+    local player = QBCore.Functions.GetPlayer(source)
+    local cid = getCitizenId(source)
+    if not player or not cid then return false, "Failed to get player object." end
+
+    if exports['vd-vapeshop']:DoesPlayerOwnVapeshop(source) == true then return false, "You already own a vapeshop." end
+
+    if not exports['vd-vapeshop']:CanAffordVapeshop(source) then return false, "You cannot afford a vapeshop ( $"..tostring(config.ShopPrice).." )" end
+
+    local success, result = pcall(function()
+        return mysql:insert("INSERT INTO vd_vapeshop (citizenid, balance, stock_data) VALUES (?, ?, ?)", { cid, config.StartingBalance, "{}" })
+    end)
+
+    if success then
+        local amount = config.ShopPrice
+        local currency = config.Currency
+        
+        if currency == "cash" then
+            player.Functions.RemoveMoney("cash", amount, "purchase-vapeshop")
+        elseif currency == "bank" then
+            player.Functions.RemoveMoney("bank", amount, "purchase-vapeshop")
+        end
+        
+        print("^2[VD-Vapeshop] "..cid.." purchased a vapeshop for $"..amount)
+        return true, "Successfully purchased vapeshop for $"..tostring(config.ShopPrice)
+    else
+        print("^1[VD-Vapeshop] Failed to purchase vapeshop for "..cid..": "..tostring(result))
+        return false, "Failed to purchase vapeshop."
+    end
 end)
 
 --[[
@@ -186,12 +310,12 @@ end)
     @return table - Statistics including balance, stock count, total value
 ]]
 exports('GetVapeshopStats', function(source)
-    if not server.DoesPlayerOwnVapeshop(source) then
+    if not exports['vd-vapeshop']:DoesPlayerOwnVapeshop(source) then
         return nil
     end
     
-    local balance = server.GetVapeshopBalance(source)
-    local stock = server.GetPlayerVapeshopStock(source)
+    local balance = exports['vd-vapeshop']:GetVapeshopBalance(source)
+    local stock = exports['vd-vapeshop']:GetPlayerVapeshopStock(source)
     
     local totalStock = 0
     local totalValue = 0
@@ -220,7 +344,66 @@ end)
     @return boolean, string - Success status and message
 ]]
 exports('ForceRandomSale', function(source)
-    return server.ProcessRandomSale(source)
+    if not exports['vd-vapeshop']:DoesPlayerOwnVapeshop(source) then return false, "Player doesn't own a vapeshop" end
+
+    local stock = exports['vd-vapeshop']:GetPlayerVapeshopStock(source)
+    if not stock or #stock == 0 then return false, "No stock available" end
+
+    local availableVapes = {}
+    for _, vape in pairs(stock) do
+        if vape.count and vape.count > 0 then
+            table.insert(availableVapes, vape)
+        end
+    end
+
+    if #availableVapes == 0 then return false, "No vapes in stock" end
+
+    local randomVape = availableVapes[math.random(1, #availableVapes)]
+    local vapeConfig = nil
+
+    for _, v in ipairs(config.Vapes) do
+        if v.name and v.name:lower() == randomVape.name:lower() then
+            vapeConfig = v
+            break
+        end
+    end
+
+    if not vapeConfig then return false, "Vape config not found" end
+
+    local salePrice = vapeConfig.price
+    local quantitySold = math.random(config.MinSaleQuantity, math.min(config.MaxSaleQuantity, randomVape.count))
+
+    local newStock = {}
+    for _, vape in pairs(stock) do
+        if vape.name:lower() == randomVape.name:lower() then
+            local newCount = vape.count - quantitySold
+            if newCount > 0 then
+                table.insert(newStock, {
+                    name = vape.name,
+                    count = newCount
+                })
+            end
+        else
+            table.insert(newStock, vape)
+        end
+    end
+
+    local citizenid = getCitizenId(source)
+    local success, result = pcall(function()
+        return mysql:update("UPDATE vd_vapeshop SET stock_data = ? WHERE citizenid = ?", { json.encode(newStock), citizenid })
+    end)
+
+    if not success then return false, "Failed to update stock" end
+
+    local totalEarnings = salePrice * quantitySold
+    if not exports['vd-vapeshop']:AddVapeshopBalance(source, totalEarnings) then
+        return false, "Failed to add earnings to balance"
+    end
+
+    local message = string.format("Sold %d %s for $%d", quantitySold, randomVape.name, totalEarnings)
+    print("^2[VD-Vapeshop] "..citizenid.." "..message)
+    
+    return true, message
 end)
 
 --[[

@@ -4,7 +4,7 @@ game 'gta5'
 name "vd-vapeshop"
 description "Vapeshop bro"
 author "notvfive"
-version "1.0"
+version "1.1"
 lua54 'yes'
 
 shared_scripts {
